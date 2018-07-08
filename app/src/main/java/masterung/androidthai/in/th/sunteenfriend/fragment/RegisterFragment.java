@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -22,9 +23,15 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import java.io.File;
+
+import it.sauronsoftware.ftp4j.FTPClient;
+import it.sauronsoftware.ftp4j.FTPDataTransferListener;
 import masterung.androidthai.in.th.sunteenfriend.MainActivity;
 import masterung.androidthai.in.th.sunteenfriend.R;
 import masterung.androidthai.in.th.sunteenfriend.utility.MyAlertDialog;
+import masterung.androidthai.in.th.sunteenfriend.utility.MyConstant;
+import masterung.androidthai.in.th.sunteenfriend.utility.UploadDataToServer;
 
 public class RegisterFragment extends Fragment {
 
@@ -32,6 +39,7 @@ public class RegisterFragment extends Fragment {
     private Uri uri;
     private ImageView imageView;
     private boolean aBoolean = true;
+    private String imageString;
 
 
     @Override
@@ -84,11 +92,39 @@ public class RegisterFragment extends Fragment {
         } else {
 //            No Space
             uploadImage();
+            uploadText(nameString, userString, passwordString);
 
         }
 
 
     }   // upload
+
+    private void uploadText(String nameString, String userString, String passwordString) {
+
+        MyConstant myConstant = new MyConstant();
+
+        imageString = myConstant.getUrlImage() + imageString;
+
+        try {
+
+            UploadDataToServer uploadDataToServer = new UploadDataToServer(getActivity());
+            uploadDataToServer.execute(nameString, userString, passwordString,
+                    imageString, myConstant.getUrlAddUser());
+
+            if (Boolean.parseBoolean(uploadDataToServer.get())) {
+                Toast.makeText(getActivity(), "Success Register", Toast.LENGTH_SHORT).show();
+                getActivity().getSupportFragmentManager().popBackStack();
+            } else {
+                Toast.makeText(getActivity(), "Cannot Register", Toast.LENGTH_SHORT).show();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+
+    }
 
     private void uploadImage() {
 
@@ -107,7 +143,71 @@ public class RegisterFragment extends Fragment {
 
         Log.d("8JulyV1", "Path ==> " + pathString);
 
+//        Find imageString
+        imageString = pathString.substring(pathString.lastIndexOf("/"));
+        Log.d("8JulyV1", "imageString ==> " + imageString);
+
+//        Change Policy
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy
+                .Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+
+//        Use Library ftp4j
+        File file = new File(pathString);
+        MyConstant myConstant = new MyConstant();
+        FTPClient ftpClient = new FTPClient();
+
+        try {
+//            Evant A
+            ftpClient.connect(myConstant.getHostFTP(), myConstant.getPotrFTP());
+            ftpClient.login(myConstant.getUserFTP(), myConstant.getPasswordFTP());
+            ftpClient.setType(FTPClient.TYPE_BINARY);
+            ftpClient.changeDirectory("MasterUNG");
+            ftpClient.upload(file, new uploadListener());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            try {
+//                Event B
+                ftpClient.disconnect(true);
+
+            } catch (Exception e1) {
+                e1.printStackTrace();
+            }
+
+        }
+
+
     }
+
+    public class uploadListener implements FTPDataTransferListener{
+        @Override
+        public void started() {
+            Toast.makeText(getActivity(), "Start Upload", Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        public void transferred(int i) {
+            Toast.makeText(getActivity(), "Process Upload", Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        public void completed() {
+            Toast.makeText(getActivity(), "Complete Upload", Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        public void aborted() {
+
+        }
+
+        @Override
+        public void failed() {
+
+        }
+    }
+
+
 
 
     @Override
