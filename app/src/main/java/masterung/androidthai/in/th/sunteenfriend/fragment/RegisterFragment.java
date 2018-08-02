@@ -215,28 +215,21 @@ public class RegisterFragment extends Fragment {
                                  int resultCode,
                                  Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
         if (resultCode == getActivity().RESULT_OK) {
-
 //            Success Choose Image
             uri = data.getData();
             aBoolean = false;
-
 //            Show Image on ImageView
             try {
-
                 Bitmap bitmap = BitmapFactory.decodeStream(getActivity().getContentResolver().openInputStream(uri));
-                imageView.setImageBitmap(bitmap);
-
+                Bitmap bitmap1 = Bitmap.createScaledBitmap(bitmap, 800, 600, false);
+                imageView.setImageBitmap(bitmap1);
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
-
         } else {
             Toast.makeText(getActivity(), "Please Choose Image", Toast.LENGTH_SHORT).show();
         }
-
     }
 
     private void pictureController() {
